@@ -44,6 +44,9 @@ mod doc {
         /// 零初始化。
         pub const ZERO: Self = Self {};
     }
+
+    /// 额外的上下文
+    pub struct ContextExt {}
 }
 
 #[cfg(doc)]

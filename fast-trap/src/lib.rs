@@ -10,7 +10,9 @@ mod hal;
 
 pub use entire::*;
 pub use fast::*;
-pub use hal::{FlowContext, load_direct_trap_entry, reuse_stack_for_trap, soft_trap, trap_entry};
+pub use hal::{
+    ContextExt, FlowContext, load_direct_trap_entry, reuse_stack_for_trap, soft_trap, trap_entry,
+};
 
 use core::{
     alloc::Layout,
@@ -35,9 +37,9 @@ impl FreeTrapStack {
     pub fn new(
         range: Range<usize>,
         drop: fn(Range<usize>),
-
         context_ptr: NonNull<FlowContext>,
         fast_handler: FastHandler,
+        ctx_ext: ContextExt,
     ) -> Result<Self, IllegalStack> {
         const LAYOUT: Layout = Layout::new::<TrapHandler>();
         let bottom = range.start;
@@ -49,6 +51,7 @@ impl FreeTrapStack {
             handler.drop = drop;
             handler.context = context_ptr;
             handler.fast_handler = fast_handler;
+            handler.ctx_ext = ctx_ext;
             Ok(Self(unsafe { NonNull::new_unchecked(handler) }))
         } else {
             Err(IllegalStack)
@@ -61,6 +64,12 @@ impl FreeTrapStack {
         let scratch = hal::exchange_scratch(self.0.as_ptr() as _);
         forget(self);
         LoadedTrapStack(scratch)
+    }
+
+    /// get where handler locates, i.e. the sscratch to be loaded
+    #[inline]
+    pub fn ptr(&self) -> usize {
+        self.0.as_ptr() as usize
     }
 }
 
@@ -132,6 +141,9 @@ struct TrapHandler {
     /// - 在快速路径开始时暂存 a0。
     /// - 在快速路径结束时保存完整路径函数。
     scratch: usize,
+
+    /// 额外的上下文，用法因架构而异。
+    ctx_ext: ContextExt,
 
     range: Range<usize>,
     drop: fn(Range<usize>),
