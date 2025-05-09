@@ -90,6 +90,7 @@ pub struct FlowContext {
     pub tp: usize,      // 29..
     pub sp: usize,      // 30..
     pub pc: usize,      // 31..
+    pub sstatus: usize, // 32..
 }
 
 impl FlowContext {
@@ -103,6 +104,7 @@ impl FlowContext {
         tp: 0,
         sp: 0,
         pc: 0,
+        sstatus: 0,
     };
 }
 
@@ -111,9 +113,13 @@ impl FlowContext {
 /// 扩展上下文，用于保存/恢复 gp/tp。
 pub struct ContextExt {
     /// 切换前的gp, 需要在trap时恢复
-    pub gp: usize, 
+    pub gp: usize,
     /// 切换前的tp, 需要在trap时恢复
     pub tp: usize,
+    /*
+     * /// sepc, 需要切换上下文时恢复
+     *pub sepc: usize,
+     */
 }
 
 impl ContextExt {
@@ -121,18 +127,20 @@ impl ContextExt {
     pub const ZERO: Self = Self {
         gp: 0,
         tp: 0,
+        //sepc: 0,
     };
 
     pub fn read() -> Self {
         let mut gp;
         let mut tp;
         unsafe {
-            core::arch::asm!("mv {gp}, gp", "mv {tp}, tp", gp = out(reg) gp, tp = out(reg) tp, options(nostack, nomem));
+            core::arch::asm!(
+                "mv {gp}, gp",
+                "mv {tp}, tp",
+                //"csrr {sepc}, tp",
+                gp = out(reg) gp, tp = out(reg) tp, options(nostack, nomem));
         }
-        Self {
-            gp,
-            tp
-        }
+        Self { gp, tp }
     }
 }
 /// # Safety
@@ -229,6 +237,8 @@ pub unsafe extern "C" fn trap_entry() {
             save!(s9  => a1[25]),
             save!(s10 => a1[26]),
             save!(s11 => a1[27]),
+            "csrr t0, sstatus",
+            save!(t0 => a1[32]),
             // 调用完整路径函数
             //
             // | reg    | position
@@ -257,6 +267,8 @@ pub unsafe extern "C" fn trap_entry() {
             load!(a1[25] => s9),
             load!(a1[26] => s10),
             load!(a1[27] => s11),
+            load!(a1[32] => t0),
+            "csrw sstatus, t0",
             "2:", // 设置所有调用者寄存器
             load!(a1[ 0] => ra),
             load!(a1[ 1] => t0),
@@ -275,12 +287,11 @@ pub unsafe extern "C" fn trap_entry() {
             load!(a1[15] => a7),
             "0:", // 设置少量参数寄存器
             load!(a1[ 8] => a0),
-            load!(a1[ 9] => a1),
-
             save!(gp => sp[3]),
             save!(tp => sp[4]),
             load!(a1[28] => gp),
             load!(a1[29] => tp),
+            load!(a1[ 9] => a1),
             exchange!(),
             r#return!(),
             //reuse = sym reuse_stack_for_trap,

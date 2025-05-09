@@ -11,7 +11,7 @@ mod hal;
 pub use entire::*;
 pub use fast::*;
 pub use hal::{
-    ContextExt, FlowContext, load_direct_trap_entry, reuse_stack_for_trap, soft_trap, trap_entry,
+    ContextExt, FlowContext, load_direct_trap_entry, reuse_stack_for_trap, soft_trap, trap_entry, soft_trap2
 };
 
 use core::{

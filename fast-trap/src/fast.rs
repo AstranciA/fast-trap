@@ -1,4 +1,4 @@
-﻿use crate::{EntireHandler, FlowContext, TrapHandler};
+﻿use crate::{ContextExt, EntireHandler, FlowContext, TrapHandler};
 use core::{mem::MaybeUninit, ptr::NonNull};
 
 /// 快速路径函数。
@@ -27,6 +27,12 @@ impl FastContext {
     #[inline]
     pub fn a0(&self) -> usize {
         self.0.scratch
+    }
+
+    /// extended ctx
+    #[inline]
+    pub fn ctx_ext(&self) -> ContextExt {
+        self.0.ctx_ext
     }
 
     /// 获取控制流上下文。

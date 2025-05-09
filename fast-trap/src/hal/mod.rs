@@ -27,6 +27,7 @@ mod doc {
     ///
     /// 如同发生一个陷入。
     pub fn soft_trap(cause: usize) {}
+    pub fn soft_trap2(cause: usize, ra: usize) {}
 
     /// 陷入处理例程。
     ///

@@ -11,8 +11,7 @@ use core::{
 };
 use dtb_walker::{Dtb, DtbObj, HeaderError, Str, WalkOperation};
 use fast_trap::{
-    FastContext, FastResult, FlowContext, FreeTrapStack, load_direct_trap_entry,
-    reuse_stack_for_trap, soft_trap, trap_entry,
+    load_direct_trap_entry, reuse_stack_for_trap, soft_trap, trap_entry, ContextExt, FastContext, FastResult, FlowContext, FreeTrapStack
 };
 use rcore_console::log;
 use riscv::register::*;
@@ -142,6 +141,7 @@ extern "C" fn rust_main(_hartid: usize, dtb: *const u8) {
         |_| {},
         context_ptr,
         fast_handler,
+        ContextExt::read()
     )
     .unwrap()
     .load();

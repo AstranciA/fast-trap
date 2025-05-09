@@ -68,6 +68,23 @@ pub unsafe fn soft_trap(cause: usize) {
     }
 }
 
+#[inline]
+#[allow(unused)]
+pub unsafe fn soft_trap2(cause: usize, ra: usize) {
+    unsafe {
+        asm!(
+            "
+            mv   ra, {ra}
+            csrw scause, {cause}
+            j    {trap}
+        ",
+            cause = in(reg) cause,
+            ra = in(reg) ra,
+            trap  = sym trap_entry,
+        );
+    }
+}
+
 /// 设置全局陷入入口。
 ///
 /// # Safety
